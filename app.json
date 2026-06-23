@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Projeto Estoque",
+    "slug": "projeto-estoque",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "projetoestoque",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que o Projeto Estoque acesse a camera para ler codigos de barras.",
+          "barcodeScannerEnabled": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
