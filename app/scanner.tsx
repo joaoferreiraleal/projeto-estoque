@@ -1,5 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { BarcodeScanningResult, BarcodeType } from 'expo-camera';
+import { Link } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,8 +17,11 @@ import {
   View,
 } from 'react-native';
 
+import { AppBackground } from '../src/components/AppBackground';
+import { BackIcon } from '../src/components/AppIcons';
+import { colors, gradients, radius } from '../src/theme/design';
 import { useScannerLock } from '../src/hooks/useScannerLock';
-import { registerStockMovement } from '../src/services/stockService';
+import { getTodayMovementDate, registerStockMovement } from '../src/services/stockService';
 
 const BARCODE_TYPES: BarcodeType[] = [
   'ean13',
@@ -117,26 +122,34 @@ export default function ScannerScreen() {
 
   if (!permission) {
     return (
-      <SafeAreaView style={styles.centeredContainer}>
-        <ActivityIndicator color="#111827" size="large" />
-      </SafeAreaView>
+      <AppBackground contentStyle={styles.centeredContainer}>
+        <StatusBar barStyle="light-content" />
+        <ActivityIndicator color={colors.white} size="large" />
+      </AppBackground>
     );
   }
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={styles.centeredContainer}>
-        <StatusBar barStyle="dark-content" />
+      <AppBackground contentStyle={styles.centeredContainer}>
+        <StatusBar barStyle="light-content" />
         <View style={styles.permissionPanel}>
           <Text style={styles.permissionTitle}>Camera indisponivel</Text>
           <Text style={styles.permissionText}>
             A permissao da camera e necessaria para ler codigos de barras.
           </Text>
-          <Pressable style={styles.primaryButton} onPress={requestPermission}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={requestPermission}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.primaryButtonPressed,
+            ]}
+          >
             <Text style={styles.primaryButtonText}>Permitir camera</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </AppBackground>
     );
   }
 
@@ -150,15 +163,42 @@ export default function ScannerScreen() {
         onBarcodeScanned={scannerActive ? handleBarcodeScanned : undefined}
         style={StyleSheet.absoluteFill}
       />
+      <LinearGradient
+        colors={gradients.cameraOverlay}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
 
       <SafeAreaView pointerEvents="box-none" style={styles.overlay}>
         <View style={styles.topBar}>
-          <Text style={styles.title}>Scanner</Text>
-          {locked ? <Text style={styles.badge}>Pausado</Text> : null}
+          <Link asChild href="/">
+            <Pressable
+              accessibilityLabel="Voltar para inicio"
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
+            >
+              <BackIcon />
+            </Pressable>
+          </Link>
+
+          <View style={styles.topTitleBlock}>
+            <Text style={styles.title}>Scanner</Text>
+            <Text style={styles.screenSubtitle}>Aponte para o codigo</Text>
+          </View>
+
+          <View style={styles.topRight}>
+            {locked ? <Text style={styles.badge}>Pausado</Text> : null}
+          </View>
         </View>
 
         <View pointerEvents="none" style={styles.scanArea}>
-          <View style={styles.scanFrame} />
+          <View style={styles.scanFrame}>
+            <View style={[styles.corner, styles.cornerTopLeft]} />
+            <View style={[styles.corner, styles.cornerTopRight]} />
+            <View style={[styles.corner, styles.cornerBottomLeft]} />
+            <View style={[styles.corner, styles.cornerBottomRight]} />
+            <View style={styles.scanLine} />
+          </View>
         </View>
 
         <View style={styles.bottomPanel}>
@@ -201,7 +241,11 @@ export default function ScannerScreen() {
               <Pressable
                 disabled={saving}
                 onPress={handleCancelQuantity}
-                style={[styles.secondaryButton, saving && styles.disabledButton]}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                  saving && styles.disabledButton,
+                ]}
               >
                 <Text style={styles.secondaryButtonText}>Cancelar</Text>
               </Pressable>
@@ -209,7 +253,11 @@ export default function ScannerScreen() {
               <Pressable
                 disabled={saving}
                 onPress={handleConfirmQuantity}
-                style={[styles.primaryButton, saving && styles.disabledButton]}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                  saving && styles.disabledButton,
+                ]}
               >
                 {saving ? (
                   <ActivityIndicator color="#ffffff" />
@@ -225,15 +273,6 @@ export default function ScannerScreen() {
   );
 }
 
-function getTodayMovementDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -245,28 +284,28 @@ function getErrorMessage(error: unknown): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: colors.navy950,
   },
   centeredContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
     padding: 24,
   },
   permissionPanel: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 320,
+    alignItems: 'center',
     gap: 16,
   },
   permissionTitle: {
-    color: '#111827',
-    fontSize: 22,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: '800',
     textAlign: 'center',
   },
   permissionText: {
-    color: '#4b5563',
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -275,26 +314,52 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
   topBar: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  navButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+  },
+  navButtonPressed: {
+    backgroundColor: colors.surfaceStrong,
+  },
+  topTitleBlock: {
+    alignItems: 'center',
+    gap: 3,
+  },
+  topRight: {
+    width: 78,
+    alignItems: 'flex-end',
+  },
   title: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  screenSubtitle: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
   },
   badge: {
     overflow: 'hidden',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    color: '#ffffff',
-    fontSize: 13,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceStrong,
+    color: colors.white,
+    fontSize: 12,
     fontWeight: '700',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
   },
   scanArea: {
@@ -305,20 +370,61 @@ const styles = StyleSheet.create({
     width: '78%',
     maxWidth: 320,
     aspectRatio: 1.45,
-    borderWidth: 2,
-    borderColor: '#ffffff',
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(8, 17, 33, 0.18)',
+  },
+  corner: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderColor: colors.green,
+    borderWidth: 3,
+  },
+  cornerTopLeft: {
+    top: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+  },
+  cornerTopRight: {
+    top: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+  },
+  cornerBottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+  },
+  cornerBottomRight: {
+    right: -2,
+    bottom: -2,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+  },
+  scanLine: {
+    width: '72%',
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: colors.blue,
   },
   bottomPanel: {
     minHeight: 56,
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.58)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceStrong,
     paddingHorizontal: 16,
   },
   statusText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
@@ -327,74 +433,80 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.62)',
+    backgroundColor: 'rgba(3, 8, 16, 0.78)',
     padding: 20,
   },
   modalPanel: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceStrong,
     padding: 20,
     gap: 14,
   },
   modalTitle: {
-    color: '#111827',
+    color: colors.white,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   barcodeText: {
-    color: '#4b5563',
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },
   quantityInput: {
     height: 54,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    color: '#111827',
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    color: colors.white,
     fontSize: 24,
     fontWeight: '700',
     paddingHorizontal: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   errorText: {
-    color: '#b91c1c',
+    color: colors.danger,
     fontSize: 14,
     lineHeight: 20,
   },
   modalActions: {
     flexDirection: 'row',
     gap: 12,
-    justifyContent: 'flex-end',
   },
   primaryButton: {
     minHeight: 46,
-    minWidth: 120,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#2563eb',
+    borderRadius: radius.sm,
+    backgroundColor: colors.green,
     paddingHorizontal: 18,
   },
+  primaryButtonPressed: {
+    backgroundColor: colors.greenPressed,
+  },
   primaryButtonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 15,
     fontWeight: '700',
   },
   secondaryButton: {
     minHeight: 46,
-    minWidth: 108,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
+    borderRadius: radius.sm,
+    backgroundColor: colors.blue,
     paddingHorizontal: 18,
   },
+  secondaryButtonPressed: {
+    backgroundColor: colors.bluePressed,
+  },
   secondaryButtonText: {
-    color: '#334155',
+    color: colors.white,
     fontSize: 15,
     fontWeight: '700',
   },

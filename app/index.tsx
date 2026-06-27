@@ -1,61 +1,104 @@
 import { Link } from 'expo-router';
-import { Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import type { Href } from 'expo-router';
+import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+
+import { AppBackground } from '../src/components/AppBackground';
+import { ChartIcon, ScanIcon } from '../src/components/AppIcons';
+import { colors, radius } from '../src/theme/design';
+
+const SUMMARY_ROUTE = '/summary' as Href;
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <AppBackground>
+      <StatusBar barStyle="light-content" />
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Projeto Estoque</Text>
-          <Text style={styles.subtitle}>Contagem local-first</Text>
+          <Text style={styles.title}>Controle de Estoque</Text>
+          <Text style={styles.subtitle}>Gerencie seu inventario de forma simples</Text>
         </View>
 
-        <Link asChild href="/scanner">
-          <Pressable style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Abrir scanner</Text>
-          </Pressable>
-        </Link>
+        <View style={styles.actions}>
+          <Link asChild href="/scanner">
+            <Pressable
+              accessibilityLabel="Abrir scanner"
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.scanButton,
+                pressed && styles.scanButtonPressed,
+              ]}
+            >
+              <ScanIcon />
+            </Pressable>
+          </Link>
+
+          <Link asChild href={SUMMARY_ROUTE}>
+            <Pressable
+              accessibilityLabel="Abrir resumo"
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.summaryButton,
+                pressed && styles.summaryButtonPressed,
+              ]}
+            >
+              <ChartIcon />
+            </Pressable>
+          </Link>
+        </View>
       </View>
-    </SafeAreaView>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 28,
-  },
-  header: {
-    gap: 8,
-  },
-  title: {
-    color: '#0f172a',
-    fontSize: 34,
-    fontWeight: '800',
-  },
-  subtitle: {
-    color: '#475569',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  primaryButton: {
-    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 18,
+    padding: 24,
+    gap: 24,
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+  header: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  title: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  actions: {
+    width: '100%',
+    maxWidth: 188,
+    gap: 8,
+  },
+  actionButton: {
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
+  scanButton: {
+    backgroundColor: colors.green,
+  },
+  scanButtonPressed: {
+    backgroundColor: colors.greenPressed,
+    transform: [{ scale: 0.985 }],
+  },
+  summaryButton: {
+    backgroundColor: colors.blue,
+  },
+  summaryButtonPressed: {
+    backgroundColor: colors.bluePressed,
+    transform: [{ scale: 0.985 }],
   },
 });

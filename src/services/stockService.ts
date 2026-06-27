@@ -4,6 +4,13 @@ import type { Barcode, IsoDateTimeString, MovementDate, StockMovement } from '..
 const MIN_BARCODE_LENGTH = 6;
 const MOVEMENT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+export interface StockSummary {
+  movementCount: number;
+  productCount: number;
+  todayQuantity: number;
+  totalQuantity: number;
+}
+
 export async function registerStockMovement(
   barcode: string,
   quantity: number,
@@ -63,6 +70,41 @@ export async function registerStockMovement(
     note: normalizedNote,
     created_at: createdAt,
   };
+}
+
+export async function getStockSummary(): Promise<StockSummary> {
+  const db = await initDb();
+  const today = getTodayMovementDate();
+
+  const productCount = await db.getFirstAsync<{ value: number }>(
+    'SELECT COUNT(*) AS value FROM products;'
+  );
+  const movementCount = await db.getFirstAsync<{ value: number }>(
+    'SELECT COUNT(*) AS value FROM stock_movements;'
+  );
+  const totalQuantity = await db.getFirstAsync<{ value: number | null }>(
+    'SELECT COALESCE(SUM(quantity), 0) AS value FROM stock_movements;'
+  );
+  const todayQuantity = await db.getFirstAsync<{ value: number | null }>(
+    'SELECT COALESCE(SUM(quantity), 0) AS value FROM stock_movements WHERE movement_date = ?;',
+    [today]
+  );
+
+  return {
+    movementCount: Number(movementCount?.value ?? 0),
+    productCount: Number(productCount?.value ?? 0),
+    todayQuantity: Number(todayQuantity?.value ?? 0),
+    totalQuantity: Number(totalQuantity?.value ?? 0),
+  };
+}
+
+export function getTodayMovementDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 function normalizeBarcode(barcode: string): Barcode {

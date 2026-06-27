@@ -1,20 +1,20 @@
 import { Stack } from 'expo-router';
 
+import { colors } from '../src/theme/design';
+
 export default function RootLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: '#0f172a',
+        contentStyle: {
+          backgroundColor: colors.navy950,
         },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: {
-          fontWeight: '700',
-        },
+        headerShown: false,
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Estoque' }} />
       <Stack.Screen name="scanner" options={{ title: 'Scanner' }} />
+      <Stack.Screen name="summary" options={{ title: 'Resumo' }} />
     </Stack>
   );
 }
